@@ -36,7 +36,7 @@ apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 group = 'io.dgraph'
-version = '0.8.1'
+version = '0.8.1-1'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -80,14 +80,18 @@ install {
 bintray {
     user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
     key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
-    configurations = ['archives']
-    description = "Dgraph Java Client"
+    publications = ['mavenJava'] //When uploading Maven-based publication files
+    publish = true
     pkg {
         repo = 'maven'
         name = 'dgraph4j'
-        userOrg = user
-        licenses = ['Apache-2.0']
+        desc = "Dgraph Java Client"
+        websiteUrl = 'https://github.com/windoze/dgraph4j'
+        issueTrackerUrl = 'https://github.com/windoze/dgraph4j/issues'
         vcsUrl = 'https://github.com/windoze/dgraph4j.git'
+        licenses = ['Apache-2.0']
+        labels = ['dgraph']
+        publicDownloadNumbers = true
         version {
             name = "${dgraph4jVersion}"
             desc = "Dgraph Java Client ${dgraph4jVersion}"
@@ -166,16 +170,26 @@ task fatJar(type: Jar) {
     with jar
 }
 
-task sourceJar(type: Jar) {
-    from sourceSets.main.allJava
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
 }
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            artifact sourceJar {
-                classifier "sources"
-            }
+            artifact sourcesJar
+            artifact javadocJar
         }
     }
 }
@@ -188,5 +202,11 @@ publishing {
                 password project.hasProperty('mavenPass') ? project.property('mavenPass') : System.getenv('MAVEN_PASS')
             }
         }
+    }
+}
+javadoc {
+    options{
+        encoding "UTF-8"
+        charSet 'UTF-8'
     }
 }
